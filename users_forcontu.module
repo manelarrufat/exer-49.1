@@ -81,10 +81,17 @@ function users_forcontu_form_alter(&$form, &$form_state, $form_id) {
         '#required' => 0,
         '#lenght' => 255,
       );
+      $form['description'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Description'),
+        '#description' => t('User\'s description'),
+        '#required' => 0,
+      );
+      $form['#validate'][] = 'users_forcontu_user_validate';
       break;
     case 'user_profile_form':
       $uid = (int)$form['#user']->uid;
-      $accound = user_load($uid);
+      $account = user_load($uid);
       $form['firstname'] = array(
         '#type' => 'textfield',
         '#title' => t('First name'),
@@ -109,6 +116,14 @@ function users_forcontu_form_alter(&$form, &$form_state, $form_id) {
         '#lenght' => 255,
         '#default_value' => (($account->data['web']) ? $account->data['web'] : ''),
       );
+      $form['description'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Description'),
+        '#description' => t('User\'s description'),
+        '#required' => 0,
+        '#default_value' => (($account->data['description']['value']) ? $account->data['description']['value'] : ''),
+      );
+      $form['#validate'][] = 'users_forcontu_user_validate';
       break;
   }
 }
@@ -121,6 +136,7 @@ function users_forcontu_user_presave(&$edit, $account, $category) {
     'firstname' => $edit['firstname'],
     'lastname' => $edit['lastname'],
     'web' => $edit['web'],
+    'description' => $edit['description'],
   );
 }
 
@@ -164,6 +180,12 @@ function users_forcontu_user_view($account, $view_mode, $langcode) {
     '#attributes' => array('class' => 'web-usuario'),
     '#weight' => 3,
   );
+  $account->content['personal_data']['description'] = array(
+    '#type' => 'user_profile_item',
+    '#markup' => $account->data['description']['value'],
+    '#attributes' => array('class' => 'description-usuario'),
+    '#weight' => 4,
+  );
 }
 
 /**
@@ -171,4 +193,11 @@ function users_forcontu_user_view($account, $view_mode, $langcode) {
  */
 function users_forcontu_user_view_alter(&$build) {
   unset($build['summary']);
+}
+
+function users_forcontu_user_validate($form, &$form_state) {
+  //validamos que description no contenga la palabra drupal
+  if (preg_match("/(drupal|Drupal)/", $form_state['values']['description']['value']) ) {
+    form_set_error('description', t('Field description can not contain the word "drupal".'));
+  }
 }
