@@ -1,0 +1,174 @@
+<?php
+/**
+* @file
+* Módulo Users Forcontu
+* Este módulo nos permitirá definir funcionalidades para usuarios
+*/
+
+/**
+ * Implements hook_block_info().
+ */
+function users_forcontu_block_info() {
+  // Bloque con la ficha del usuario
+  $blocks['user_data'] = array(
+    'info' => t('User Data'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function users_forcontu_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'user_data':
+      //accedemos al objeto del usuario actual
+      global $user;
+      $block['subject'] = t('User Data');
+      if (user_is_logged_in()) {
+        if ($user->picture) {
+          //cargamos el archivo de la imagen de usuario
+          $picture_file = file_load($user->picture);
+          //obtenemos URL
+          $picture_url = file_create_url($picture_file->uri);
+        }
+        $output = '<div class="user_block_registered">';
+        if ($user->picture) {
+          $output .= '<div id = "image" >' . l('<img src = "' . $picture_url . '">', 'user/' . $user->uid, array('html' => TRUE)) . '</div>';
+        }
+        $output .= l($user->name, 'user/' . $user->uid);
+        $output .= '</div>';
+        $output .= '<div id="logout">' . l(t('Logout'), 'user/logout') . '</div>';
+      } 
+      else {
+        $output = '<div class="user_block_anonymous">';
+        $output .= '<p>Usted no ha iniciado <a href="/user/login" title="Iniciar Sesión">sesión</a> o no está <a href="/user/register" title="Registrarme">registrado</a></p>' ;
+        $output .= '</div>' ;
+      }
+      $block['content'] = $output;
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function users_forcontu_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'user_register_form':
+      $form['firstname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('First name'),
+        '#description' => t('First name'),
+        '#required' => 1,
+        '#lenght' => 255,
+      );
+      $form['lastname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Last name'),
+        '#description' => t('Last name'),
+        '#required' => 1,
+        '#lenght' => 255,
+      );
+      $form['web'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Web'),
+        '#description' => t('User\'s web'),
+        '#required' => 0,
+        '#lenght' => 255,
+      );
+      break;
+    case 'user_profile_form':
+      $uid = (int)$form['#user']->uid;
+      $accound = user_load($uid);
+      $form['firstname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('First name'),
+        '#description' => t('First name'),
+        '#required' => 1,
+        '#lenght' => 255,
+        '#default_value' => (($account->data['firstname']) ? $account->data['firstname'] : ''),
+      );
+      $form['lastname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Last name'),
+        '#description' => t('Last name'),
+        '#required' => 1,
+        '#lenght' => 255,
+        '#default_value' => (($account->data['lastname']) ? $account->data['lastname'] : ''),
+      );
+      $form['web'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Web'),
+        '#description' => t('User\'s web'),
+        '#required' => 0,
+        '#lenght' => 255,
+        '#default_value' => (($account->data['web']) ? $account->data['web'] : ''),
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function users_forcontu_user_presave(&$edit, $account, $category) {
+  $edit['data'] = array(
+    'firstname' => $edit['firstname'],
+    'lastname' => $edit['lastname'],
+    'web' => $edit['web'],
+  );
+}
+
+/**
+ * Implements hook_user_categories().
+ */
+function users_forcontu_user_categories() {
+  return array(array(
+    'name' => 'personal_data',
+    'title' => t('Personal data'),
+    'weight' => 4,
+  ));
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function users_forcontu_user_view($account, $view_mode, $langcode) {
+  $account->content['personal_data'] = array();
+  $account->content['personal_data'] = array(
+    '#type' => 'user_profile_category',
+    '#attributes' => array('class' => 'datos-personales-usuario'),
+    '#weight' => 4,
+    '#title' => t('Personal data'),
+  );
+  $account->content['personal_data']['firstname'] = array(
+    '#type' => 'user_profile_item',
+    '#markup' => $account->data['firstname'],
+    '#attributes' => array('class' => 'nombre-usuario'),
+    '#weight' => 1,
+  );
+  $account->content['personal_data']['lastname'] = array(
+    '#type' => 'user_profile_item',
+    '#markup' => $account->data['lastname'],
+    '#attributes' => array('class' => 'apellidos-usuario'),
+    '#weight' => 2,
+  );
+  $account->content['personal_data']['web'] = array(
+    '#type' => 'user_profile_item',
+    '#markup' => $account->data['web'],
+    '#attributes' => array('class' => 'web-usuario'),
+    '#weight' => 3,
+  );
+}
+
+/**
+ * Implements hook_user_view_alter().
+ */
+function users_forcontu_user_view_alter(&$build) {
+  unset($build['summary']);
+}
