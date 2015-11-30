@@ -195,9 +195,21 @@ function users_forcontu_user_view_alter(&$build) {
   unset($build['summary']);
 }
 
+/**
+* Implements validations rules
+*/
 function users_forcontu_user_validate($form, &$form_state) {
   //validamos que description no contenga la palabra drupal
   if (preg_match("/(drupal|Drupal)/", $form_state['values']['description']['value']) ) {
     form_set_error('description', t('Field description can not contain the word "drupal".'));
+  }
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function users_forcontu_user_login(&$edit, $account) {
+  if (is_array($account->roles) && in_array('intranet', array_values($account->roles))) {
+    $_GET['destination'] = 'portada_intranet';
   }
 }
