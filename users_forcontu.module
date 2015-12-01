@@ -121,7 +121,7 @@ function users_forcontu_form_alter(&$form, &$form_state, $form_id) {
         '#title' => t('Description'),
         '#description' => t('User\'s description'),
         '#required' => 0,
-        '#default_value' => (($account->data['description']['value']) ? $account->data['description']['value'] : ''),
+        '#default_value' => (($account->data['description']) ? $account->data['description'] : ''),
       );
       $form['#validate'][] = 'users_forcontu_user_validate';
       break;
@@ -147,6 +147,8 @@ function users_forcontu_user_categories() {
   return array(array(
     'name' => 'personal_data',
     'title' => t('Personal data'),
+    'access callback' => 'user_access',
+    'access arguments' => array('view personal data'),
     'weight' => 4,
   ));
 }
@@ -155,37 +157,39 @@ function users_forcontu_user_categories() {
  * Implements hook_user_view().
  */
 function users_forcontu_user_view($account, $view_mode, $langcode) {
-  $account->content['personal_data'] = array();
-  $account->content['personal_data'] = array(
-    '#type' => 'user_profile_category',
-    '#attributes' => array('class' => 'datos-personales-usuario'),
-    '#weight' => 4,
-    '#title' => t('Personal data'),
-  );
-  $account->content['personal_data']['firstname'] = array(
-    '#type' => 'user_profile_item',
-    '#markup' => $account->data['firstname'],
-    '#attributes' => array('class' => 'nombre-usuario'),
-    '#weight' => 1,
-  );
-  $account->content['personal_data']['lastname'] = array(
-    '#type' => 'user_profile_item',
-    '#markup' => $account->data['lastname'],
-    '#attributes' => array('class' => 'apellidos-usuario'),
-    '#weight' => 2,
-  );
-  $account->content['personal_data']['web'] = array(
-    '#type' => 'user_profile_item',
-    '#markup' => $account->data['web'],
-    '#attributes' => array('class' => 'web-usuario'),
-    '#weight' => 3,
-  );
-  $account->content['personal_data']['description'] = array(
-    '#type' => 'user_profile_item',
-    '#markup' => $account->data['description']['value'],
-    '#attributes' => array('class' => 'description-usuario'),
-    '#weight' => 4,
-  );
+  if (user_access('view personal data')) {
+    $account->content['personal_data'] = array();
+    $account->content['personal_data'] = array(
+      '#type' => 'user_profile_category',
+      '#attributes' => array('class' => 'datos-personales-usuario'),
+      '#weight' => 4,
+      '#title' => t('Personal data'),
+    );
+    $account->content['personal_data']['firstname'] = array(
+      '#type' => 'user_profile_item',
+      '#markup' => $account->data['firstname'],
+      '#attributes' => array('class' => 'nombre-usuario'),
+      '#weight' => 1,
+    );
+    $account->content['personal_data']['lastname'] = array(
+      '#type' => 'user_profile_item',
+      '#markup' => $account->data['lastname'],
+      '#attributes' => array('class' => 'apellidos-usuario'),
+      '#weight' => 2,
+    );
+    $account->content['personal_data']['web'] = array(
+      '#type' => 'user_profile_item',
+      '#markup' => $account->data['web'],
+      '#attributes' => array('class' => 'web-usuario'),
+      '#weight' => 3,
+    );
+    $account->content['personal_data']['description'] = array(
+      '#type' => 'user_profile_item',
+      '#markup' => $account->data['description'],
+      '#attributes' => array('class' => 'description-usuario'),
+      '#weight' => 4,
+    );
+  }
 }
 
 /**
@@ -200,7 +204,7 @@ function users_forcontu_user_view_alter(&$build) {
 */
 function users_forcontu_user_validate($form, &$form_state) {
   //validamos que description no contenga la palabra drupal
-  if (preg_match("/(drupal|Drupal)/", $form_state['values']['description']['value']) ) {
+  if (preg_match("/(drupal|Drupal)/", $form_state['values']['description']) ) {
     form_set_error('description', t('Field description can not contain the word "drupal".'));
   }
 }
@@ -212,4 +216,20 @@ function users_forcontu_user_login(&$edit, $account) {
   if (is_array($account->roles) && in_array('intranet', array_values($account->roles))) {
     $_GET['destination'] = 'portada_intranet';
   }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function users_forcontu_permission() {
+  return array(
+    'access to intranet' =>  array(
+      'title' => t('Access to intranet'),
+      'description' => t('Access to intranet'),
+    ),
+    'view personal data' => array(
+      'title' => t('View personal data'),
+      'description' => t('View personal data'),
+    ),
+  );
 }
